@@ -2,9 +2,9 @@ const mongoose = require('mongoose');
 
 const policyholderSchema = new mongoose.Schema({
     name: { type: String, required: true, unique: true },
-    age: { type: Number, required: true, min: 18 },
-    email: { type: String, required: true, unique: true, match: /^[^\s@]+@[^\s@]+\.[^\s@]+$/ },
-    password: { type: String, required: true }
-}, { timestamps: true });
+    email: { type: String, required: true, unique: true },
+    password: { type: String, required: true },
+    age: { type: Number, required: true, min: 18 }
+});
 
 module.exports = mongoose.model('Policyholder', policyholderSchema);

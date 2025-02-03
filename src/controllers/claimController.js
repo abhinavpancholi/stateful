@@ -1,63 +1,96 @@
 const Claim = require('../models/claim');
-const Policy = require('../models/policy');
 
+// Only authorized policyholders can create claims
 exports.createClaim = async (req, res) => {
     try {
-        const { policyId, claimAmount } = req.body;
-
-        const policy = await Policy.findById(policyId);
-        if (!policy) return res.status(400).json({ message: "Invalid policy ID" });
-        if (claimAmount > policy.coverageAmount) return res.status(400).json({ message: "Claim amount exceeds policy coverage" });
-
-        const claim = new Claim({ policyId, claimAmount });
+        if (req.user.role !== 'policyholder') {
+            return res.status(403).json({ message: 'Access Denied: Only policyholders can create claims' });
+        }
+        const claim = new Claim({ ...req.body, policyholderId: req.user.id, claim_date: new Date() });
         await claim.save();
-
         res.status(201).json({ message: "Claim created successfully", data: claim });
-    } catch (error) {
-        res.status(500).json({ message: "Server error", error: error.message });
+    } catch (err) {
+        res.status(500).json({ message: err.message });
     }
 };
 
-exports.getAllClaims = async (req, res) => {
-    try {
-        const claims = await Claim.find().populate('policyId');
-        res.json(claims);
-    } catch (error) {
-        res.status(500).json({ message: "Server error", error: error.message });
-    }
-};
-
+// Only admin can update claim status & approved amount
 exports.updateClaim = async (req, res) => {
-    try {
-        const { id } = req.params;
-        const { claimAmount, status } = req.body;
+    const { id } = req.params;
+    const { status, claim_update_amount } = req.body; // Use claim_update_amount as per schema
 
+    try {
         const claim = await Claim.findById(id);
         if (!claim) return res.status(404).json({ message: "Claim not found" });
 
-        if (claimAmount) {
-            claim.claim_update_amount = claim.claimAmount;
-            claim.claimAmount = claimAmount;
-            claim.claim_update_date = new Date();
+        // Ensure only admins can update
+        if (req.user.role !== 'admin') {
+            return res.status(403).json({ message: 'Access Denied: Only admins can update claims' });
         }
 
-        if (status) {
-            claim.status = status;
-            claim.claim_update_date = new Date();
+        // Update claim fields
+        if (status) claim.status = status;
+        if (claim_update_amount) {
+            claim.claim_update_amount = claim_update_amount; // Update the approved amount
         }
+        claim.claim_update_date = new Date(); // Update the claim update date
 
-        await claim.save();
+        await claim.save(); // Save the updated claim to the database
         res.json({ message: "Claim updated successfully", data: claim });
-    } catch (error) {
-        res.status(500).json({ message: "Server error", error: error.message });
+    } catch (err) {
+        res.status(500).json({ message: err.message });
     }
 };
 
-exports.deleteClaim = async (req, res) => {
+
+// Get all claims (only accessible by admin)
+exports.getAllClaims = async (req, res) => {
     try {
-        await Claim.findByIdAndDelete(req.params.id);
+        // Ensure only admins can access
+        if (req.user.role !== 'admin') {
+            return res.status(403).json({ message: 'Access Denied: Only admins can view all claims' });
+        }
+
+        const claims = await Claim.find().populate('policyId'); // Populate policy details if needed
+        res.json(claims);
+    } catch (err) {
+        res.status(500).json({ message: err.message });
+    }
+};
+
+// Get a single claim by ID (only accessible by admin)
+exports.getClaimById = async (req, res) => {
+    const { id } = req.params;
+
+    try {
+        const claim = await Claim.findById(id).populate('policyId'); // Populate policy details if needed
+        if (!claim) return res.status(404).json({ message: "Claim not found" });
+
+        // Allow admin or the policyholder who created the claim to access
+        if (req.user.role !== 'admin' && req.user.role !== 'policyholder') {
+            return res.status(403).json({ message: 'Access Denied: You are not authorized to view this claim' });
+        }
+
+        res.json(claim);
+    } catch (err) {
+        res.status(500).json({ message: err.message });
+    }
+};
+
+// Delete a claim (only accessible by admin)
+exports.deleteClaim = async (req, res) => {
+    const { id } = req.params;
+
+    try {
+        // Ensure only admins can delete
+        if (req.user.role !== 'admin') {
+            return res.status(403).json({ message: 'Access Denied: Only admins can delete claims' });
+        }
+
+        const claim = await Claim.findByIdAndDelete(id);
+        if (!claim) return res.status(404).json({ message: "Claim not found" });
         res.json({ message: "Claim deleted successfully" });
-    } catch (error) {
-        res.status(500).json({ message: "Server error", error: error.message });
+    } catch (err) {
+        res.status(500).json({ message: err.message });
     }
 };
