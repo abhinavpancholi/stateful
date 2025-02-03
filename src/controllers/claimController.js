@@ -7,29 +7,14 @@ exports.createClaim = async (req, res) => {
 
         const policy = await Policy.findById(policyId);
         if (!policy) return res.status(400).json({ message: "Invalid policy ID" });
-
         if (claimAmount > policy.coverageAmount) return res.status(400).json({ message: "Claim amount exceeds policy coverage" });
 
-        const newClaim = new Claim({ policyId, claimAmount });
-        await newClaim.save();
+        const claim = new Claim({ policyId, claimAmount });
+        await claim.save();
 
-        res.status(201).json({ message: "Claim created successfully", data: newClaim });
+        res.status(201).json({ message: "Claim created successfully", data: claim });
     } catch (error) {
-        res.status(500).json({ message: error.message });
-    }
-};
-
-exports.updateClaimStatus = async (req, res) => {
-    try {
-        const { id } = req.params;
-        const { status } = req.body;
-
-        const claim = await Claim.findByIdAndUpdate(id, { status }, { new: true });
-        if (!claim) return res.status(404).json({ message: "Claim not found" });
-
-        res.json({ message: "Claim status updated successfully", data: claim });
-    } catch (error) {
-        res.status(500).json({ message: error.message });
+        res.status(500).json({ message: "Server error", error: error.message });
     }
 };
 
@@ -38,6 +23,41 @@ exports.getAllClaims = async (req, res) => {
         const claims = await Claim.find().populate('policyId');
         res.json(claims);
     } catch (error) {
-        res.status(500).json({ message: error.message });
+        res.status(500).json({ message: "Server error", error: error.message });
+    }
+};
+
+exports.updateClaim = async (req, res) => {
+    try {
+        const { id } = req.params;
+        const { claimAmount, status } = req.body;
+
+        const claim = await Claim.findById(id);
+        if (!claim) return res.status(404).json({ message: "Claim not found" });
+
+        if (claimAmount) {
+            claim.claim_update_amount = claim.claimAmount;
+            claim.claimAmount = claimAmount;
+            claim.claim_update_date = new Date();
+        }
+
+        if (status) {
+            claim.status = status;
+            claim.claim_update_date = new Date();
+        }
+
+        await claim.save();
+        res.json({ message: "Claim updated successfully", data: claim });
+    } catch (error) {
+        res.status(500).json({ message: "Server error", error: error.message });
+    }
+};
+
+exports.deleteClaim = async (req, res) => {
+    try {
+        await Claim.findByIdAndDelete(req.params.id);
+        res.json({ message: "Claim deleted successfully" });
+    } catch (error) {
+        res.status(500).json({ message: "Server error", error: error.message });
     }
 };

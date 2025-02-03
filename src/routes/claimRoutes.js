@@ -1,9 +1,11 @@
 const express = require('express');
 const router = express.Router();
-const { createClaim, updateClaimStatus, getAllClaims } = require('../controllers/claimController');
+const { createClaim, updateClaim, getAllClaims, deleteClaim } = require('../controllers/claimController');
 
 router.post('/', createClaim);
-router.put('/:id', updateClaimStatus);
 router.get('/', getAllClaims);
+router.put('/:id', updateClaim);
+router.delete('/:id', deleteClaim);
+
 
 module.exports = router;
