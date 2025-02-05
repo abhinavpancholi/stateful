@@ -21,6 +21,10 @@ mongoose.connect(process.env.MONGO_URI, {
 }).then(() => console.log('MongoDB Connected'))
   .catch(err => console.log(err));
 
+app.get('/', ()=>{
+  res.send("Welcome! from the backend")
+})
+
 app.use('/policyholders', policyholderRoutes);
 app.use('/policies', policyRoutes);
 app.use('/claims', claimRoutes);
