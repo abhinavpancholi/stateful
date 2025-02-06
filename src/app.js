@@ -1,16 +1,26 @@
 require('dotenv').config();
 const express = require('express');
+const cors = require('cors');
 const bodyParser = require('body-parser');
 const mongoose = require('mongoose');
-// const authRoutes = require('./routes/authRoutes');
- // Mount authRoutes at /auth
-
+const authRoutes = require('./routes/authRoutes');
 const policyholderRoutes = require('./routes/policyholderRoutes');
 const policyRoutes = require('./routes/policyRoutes');
 const claimRoutes = require('./routes/claimRoutes');
-const authRoutes = require('./routes/authRoutes');
 
 const app = express();
+
+// app.use(cors({
+//     origin: 'http://localhost:5173',
+//     credentials: true
+// }));
+
+app.use(cors({
+  origin: 'http://localhost:5173',
+  methods: ['GET', 'POST', 'PUT', 'DELETE'],
+  allowedHeaders: ['Content-Type', 'Authorization']
+}));
+
 
 app.use(bodyParser.json());
 app.use('/auth', authRoutes);

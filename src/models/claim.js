@@ -3,7 +3,7 @@ const mongoose = require('mongoose');
 
 const claimSchema = new mongoose.Schema({
     policyId: { type: mongoose.Schema.Types.ObjectId, ref: 'Policy', required: true },
-    claimAmount: { type: Number, required: true },
+    claimAmount: { type: Number, required: true, min: 1 },
     claim_update_amount: { type: Number }, // Stores the previous amount before updating
     status: { type: String, enum: ["Pending", "Approved", "Rejected"], default: "Pending" },
     claim_date: { type: Date, default: Date.now }, 
