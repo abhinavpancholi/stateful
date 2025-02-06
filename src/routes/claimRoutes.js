@@ -1,8 +1,13 @@
 const express = require('express');
-const { createClaim, updateClaim, getAllClaims, getClaimById, deleteClaim } = require('../controllers/claimController');
+const { createClaim, updateClaim, getAllClaims, getClaimById, deleteClaim,getMyClaims, getClaimsByLoggedInUser } = require('../controllers/claimController');
 const { authenticateUser, authenticateAdmin } = require('../middleware/authMiddleware');
 
 const router = express.Router();
+
+router.get("/my-claim", authenticateUser, getClaimsByLoggedInUser);
+
+
+router.get('/my-claims', authenticateUser, getMyClaims);
 
 // Policyholder can create claims
 router.post('/', authenticateUser, createClaim);

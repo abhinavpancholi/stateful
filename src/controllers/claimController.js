@@ -1,4 +1,5 @@
 const Claim = require('../models/claim');
+const Policy = require('../models/policy')
 
 // Only authorized policyholders can create claims
 exports.createClaim = async (req, res) => {
@@ -93,4 +94,58 @@ exports.deleteClaim = async (req, res) => {
     } catch (err) {
         res.status(500).json({ message: err.message });
     }
+};
+
+
+
+exports.getClaimsByLoggedInUser = async (req, res) => {
+    try {
+      // Get the logged-in user's ID from the JWT token
+      const policyholderId = req.user.id;
+        
+      const policies = await Policy.find({ policyholderId }).select("_id");
+
+      const policyIds = policies.map(policy => policy._id);
+
+      // Find policies associated with the logged-in policyholder's ID
+      const claim = await Claim.find({ policyId: { $in: policyIds } });
+  
+      res.json(claim);
+    } catch (error) {
+      res.status(500).json({ message: "Server error", error: error.message });
+    }
+    
+  };
+
+//   exports.getClaimsByLoggedInUser = async (req, res) => {
+//         try {
+//             // Get the logged-in user's ID from the JWT token
+//             const policyholderId = req.user.id;
+    
+//             // Find all policies that belong to the logged-in policyholder
+//             const policies = await Policy.find({ policyholderId }).select("_id");
+    
+//             // Extract policy IDs from the policies
+//             const policyIds = policies.map(policy => policy._id);
+    
+//             // Find claims that belong to these policy IDs
+//             const claims = await Claim.find({ policyId: { $in: policyIds } });
+    
+//             res.json(claims);
+//         } catch (error) {
+//             res.status(500).json({ message: "Server error", error: error.message });
+//         }
+//     };
+
+  // Get claims for the current policyholder
+exports.getMyClaims = async (req, res) => {
+  try {
+    if (req.user.role !== 'policyholder') {
+      return res.status(403).json({ message: 'Access Denied' });
+    }
+    const claims = await Claim.find({ policyholderId: req.user.id }).populate('policyId');
+    res.json(claims);
+  } catch (err) {
+    res.status(500).json({ message: err.message });
+  }
 };
