@@ -32,7 +32,7 @@ mongoose.connect(process.env.MONGO_URI, {
   .catch(err => console.log(err));
 
 app.get('/', (req,res)=>{
-  res.send("Welcome! from the backend")
+  res.send("backend server is running fine")
 })
 
 app.use('/policyholders', policyholderRoutes);
