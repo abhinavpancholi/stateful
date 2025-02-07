@@ -25,12 +25,16 @@ app.use(cors({
 app.use(bodyParser.json());
 app.use('/auth', authRoutes);
 
-mongoose.connect(process.env.MONGO_URI, {
-    useNewUrlParser: true,
-    useUnifiedTopology: true
-}).then(() => console.log('MongoDB Connected'))
-  .catch(err => console.log(err));
-
+// mongoose.connect(process.env.MONGO_URI, {
+//     useNewUrlParser: true,
+//     useUnifiedTopology: true
+// }).then(() => console.log('MongoDB Connected'))
+//   .catch(err => console.log(err));
+  
+mongoose.connect(process.env.MONGO_URI, { useNewUrlParser: true, useUnifiedTopology: true })
+    .then(() => console.log("MongoDB Connected"))
+    .catch(err => console.error("MongoDB Connection Error:", err));
+ 
 app.get('/', (req,res)=>{
   res.send("backend server is running fine")
 })
