@@ -31,10 +31,15 @@ app.use('/auth', authRoutes);
 // }).then(() => console.log('MongoDB Connected'))
 //   .catch(err => console.log(err));
   
-mongoose.connect(process.env.MONGO_URI, { useNewUrlParser: true, useUnifiedTopology: true })
+// mongoose.connect(process.env.MONGO_URI, { useNewUrlParser: true, useUnifiedTopology: true })
+//     .then(() => console.log("MongoDB Connected"))
+//     .catch(err => console.error("MongoDB Connection Error:", err));
+
+// Remove useNewUrlParser and useUnifiedTopology
+mongoose.connect(process.env.MONGO_URI)
     .then(() => console.log("MongoDB Connected"))
     .catch(err => console.error("MongoDB Connection Error:", err));
- 
+
 app.get('/', (req,res)=>{
   res.send("backend server is running fine")
 })
@@ -43,5 +48,14 @@ app.use('/policyholders', policyholderRoutes);
 app.use('/policies', policyRoutes);
 app.use('/claims', claimRoutes);
 app.use('/auth', authRoutes);
+
+
+
+// Modify the MongoDB connection to prevent test interference
+if (process.env.NODE_ENV !== 'test') {
+  mongoose.connect(process.env.MONGO_URI)
+    .then(() => console.log("MongoDB Connected"))
+    .catch(err => console.error("MongoDB Connection Error:", err));
+}
 
 module.exports = app;

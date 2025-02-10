@@ -1,19 +1,90 @@
 const Claim = require('../models/claim');
 const Policy = require('../models/policy')
 
-// Only authorized policyholders can create claims
+// // Only authorized policyholders can create claims
+// exports.createClaim = async (req, res) => {
+//     try {
+//         if (req.user.role !== 'policyholder') {
+//             return res.status(403).json({ message: 'Access Denied: Only policyholders can create claims' });
+//         }
+//         const claim = new Claim({ ...req.body, policyholderId: req.user.id, claim_date: new Date() });
+//         await claim.save();
+//         res.status(201).json({ message: "Claim created successfully", data: claim });
+//     } catch (err) {
+//         res.status(500).json({ message: err.message });
+//     }
+// };
+
 exports.createClaim = async (req, res) => {
     try {
-        if (req.user.role !== 'policyholder') {
-            return res.status(403).json({ message: 'Access Denied: Only policyholders can create claims' });
-        }
-        const claim = new Claim({ ...req.body, policyholderId: req.user.id, claim_date: new Date() });
-        await claim.save();
-        res.status(201).json({ message: "Claim created successfully", data: claim });
+      // Check if the user is a policyholder
+      if (req.user.role !== 'policyholder') {
+        return res.status(403).json({ message: 'Access Denied: Only policyholders can create claims' });
+      }
+  
+      // Validate required fields
+      const { policyId, claimAmount } = req.body;
+      if (!policyId || !claimAmount) {
+        return res.status(400).json({ message: 'Policy ID and claim amount are required' });
+      }
+  
+      // Fetch the associated policy
+      const policy = await Policy.findById(policyId);
+      if (!policy) {
+        return res.status(404).json({ message: 'Policy not found' });
+      }
+  
+      // Rule 1: Check if the policy is active
+      if (policy.status !== 'active') {
+        return res.status(400).json({ 
+          message: 'Claims cannot be made on inactive policies',
+          policy_status: policy.status 
+        });
+      }
+  
+      // Rule 2: Claim amount cannot exceed policy coverage
+      if (claimAmount > policy.coverageAmount) {
+        return res.status(400).json({ 
+          message: 'Claim amount exceeds policy coverage',
+          max_allowed: policy.coverageAmount 
+        });
+      }
+  
+      // Rule 3: Auto-approve if claim amount is ≤ 50% of coverage
+      let status = 'Pending';
+      if (claimAmount <= policy.coverageAmount * 0.5) {
+        status = 'Approved';
+      }
+  
+      // Create the claim
+      const claim = new Claim({
+        policyId,
+        claimAmount,
+        status,
+        policyholderId: req.user.id,
+        claim_date: new Date(),
+        claim_update_date: status === 'Approved' ? new Date() : null, // Set update date if auto-approved
+        claim_update_amount: status === 'Approved' ? claimAmount : null // Set approved amount if auto-approved
+      });
+  
+      await claim.save();
+  
+      // Update policy claim count (optional)
+      await Policy.findByIdAndUpdate(policyId, { $inc: { claimCount: 1 } });
+  
+      res.status(201).json({ 
+        message: 'Claim created successfully', 
+        data: claim 
+      });
+  
     } catch (err) {
-        res.status(500).json({ message: err.message });
+      console.error('Error creating claim:', err);
+      res.status(500).json({ 
+        message: 'Internal Server Error', 
+        error: err.message 
+      });
     }
-};
+  };
 
 // Only admin can update claim status & approved amount
 exports.updateClaim = async (req, res) => {
