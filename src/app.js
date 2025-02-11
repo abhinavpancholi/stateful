@@ -15,11 +15,7 @@ const app = express();
 //     credentials: true
 // }));
 
-app.use(cors({
-  origin: 'http://localhost:5173',
-  methods: ['GET', 'POST', 'PUT', 'DELETE'],
-  allowedHeaders: ['Content-Type', 'Authorization']
-}));
+app.use(cors());
 
 
 app.use(bodyParser.json());
@@ -35,10 +31,10 @@ app.use('/auth', authRoutes);
 //     .then(() => console.log("MongoDB Connected"))
 //     .catch(err => console.error("MongoDB Connection Error:", err));
 
-// Remove useNewUrlParser and useUnifiedTopology
-mongoose.connect(process.env.MONGO_URI)
-    .then(() => console.log("MongoDB Connected"))
-    .catch(err => console.error("MongoDB Connection Error:", err));
+// // Remove useNewUrlParser and useUnifiedTopology
+// mongoose.connect(process.env.MONGO_URI)
+//     .then(() => console.log("MongoDB Connected"))
+//     .catch(err => console.error("MongoDB Connection Error:", err));
 
 app.get('/', (req,res)=>{
   res.send("backend server is running fine")
@@ -52,10 +48,21 @@ app.use('/auth', authRoutes);
 
 
 // Modify the MongoDB connection to prevent test interference
-if (process.env.NODE_ENV !== 'test') {
-  mongoose.connect(process.env.MONGO_URI)
-    .then(() => console.log("MongoDB Connected"))
-    .catch(err => console.error("MongoDB Connection Error:", err));
+// if (process.env.NODE_ENV !== 'test') {
+//   mongoose.connect(process.env.MONGO_URI)
+//     .then(() => console.log("MongoDB Connected"))
+//     .catch(err => console.error("MongoDB Connection Error:", err));
+// }
+
+const MONGO_URI = process.env.MONGO_URI;
+
+if (!MONGO_URI) {
+  console.error("MongoDB URI is not defined in .env file");
+  process.exit(1);
 }
+
+mongoose.connect(MONGO_URI)
+  .then(() => console.log('✅ MongoDB connected to Atlas'))
+  .catch(err => console.error('❌ MongoDB Connection Error:', err));
 
 module.exports = app;
